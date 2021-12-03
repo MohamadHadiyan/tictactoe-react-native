@@ -36,17 +36,18 @@ export default function App() {
 
   const [current, setCurrent] = useState("X");
   const [userPick, setUserPick] = useState("X");
-  const [userChose, setuserChose] = useState(false);
+  const [userChose, setUserChose] = useState(false);
 
   const [winLine, setWinLine] = useState(init.initialWinLine);
   const [winLineAnim] = useState(new Animated.Value(0));
   const [timeLineAnim] = useState(new Animated.Value(0));
+  const [highLightAnim, setHighLightAnim] = useState(new Animated.Value(0));
 
   const handleTimeLineAnim = (delay) => {
     Animated.timing(timeLineAnim, {
+      toValue: 1,
       delay: delay,
       duration: 10000,
-      toValue: 1,
       useNativeDriver: false,
     }).start(() => {
       timeLineAnim.setValue(0);
@@ -55,18 +56,26 @@ export default function App() {
 
   const handleWinLineAnim = () => {
     Animated.timing(winLineAnim, {
+      toValue: 1,
       delay: 300,
       duration: 1000,
-      toValue: 1,
       useNativeDriver: false,
     }).start(() => {
       winLineAnim.setValue(0);
     });
   };
 
+  const handleHighLightAnim = (value) => {
+    Animated.timing(highLightAnim, {
+      toValue: value,
+      duration: 250,
+      useNativeDriver: false,
+    }).start();
+  };
+
   const complationHandler = (players) => {
     setTimeout(() => {
-      if (current === "O" && singleMode) setuserChose(true);
+      if (current === userPick && singleMode) setUserChose(true);
 
       setWinner(false);
       setCompleted(false);
@@ -92,8 +101,12 @@ export default function App() {
 
     const findProps = { newMap, isWon, players, player };
     const { newPlayers, result } = findWinner(findProps);
+    const current = player === "X" ? "O" : "X";
+    setCurrent(current);
 
-    setCurrent(player === "X" ? "O" : "X");
+    if (player === userPick) handleHighLightAnim(0);
+    else handleHighLightAnim(1);
+
     setRootStore({
       ...rootStore,
       gameMap: newMap,
@@ -114,7 +127,7 @@ export default function App() {
     if (gameMap[row][cell] !== "") return;
 
     if (!started) setStarted(true);
-    if (singleMode) setuserChose(true);
+    if (singleMode) setUserChose(true);
 
     turnHandler(row, cell, gameMap, current);
   };
@@ -168,19 +181,22 @@ export default function App() {
   const pickupPlayerHandler = (pick) => {
     setCurrent(pick);
     setUserPick(pick);
+
+    if (pick === "O") handleHighLightAnim(0);
+    else handleHighLightAnim(1);
   };
 
   const closePickup = () => {
     setshowPickupModal(!showPickupModal);
   };
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setshowPickupModal(true);
-    }, 1000);
+  // useEffect(() => {
+  //   const timer = setTimeout(() => {
+  //     setshowPickupModal(true);
+  //   }, 1000);
 
-    return () => clearTimeout(timer);
-  }, []);
+  //   return () => clearTimeout(timer);
+  // }, []);
 
   useEffect(() => {
     const empty = gameMap.some((row) => row.some((cell) => cell === ""));
@@ -193,7 +209,7 @@ export default function App() {
         turnHandler(row, cell, gameMap, player);
       }, 400);
 
-      setuserChose(false);
+      setUserChose(false);
     }
   }, [gameMap, userChose]);
 
@@ -234,6 +250,15 @@ export default function App() {
     winLineRotate,
     ...winLinePos,
   ];
+
+  const currentHighLight = highLightAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [58, 0],
+  });
+
+  const translate = {
+    transform: [{ translateX: currentHighLight }],
+  };
 
   const { verticalBorder, leftBorder, width_90 } = styles;
   const cellStyle = (key) =>
@@ -276,8 +301,19 @@ export default function App() {
             </View>
           ))}
         </View>
-
-        <CurrentPlayer players={players} current={current} />
+        <CurrentPlayer players={players} current={current}>
+          <Animated.View
+            style={[
+              {
+                width: 58,
+                height: 42,
+                backgroundColor: "#1cd",
+                position: "absolute",
+              },
+              translate,
+            ]}
+          />
+        </CurrentPlayer>
         <Footer handleReset={resetHandler} handleSettings={settingsHandler} />
       </View>
 

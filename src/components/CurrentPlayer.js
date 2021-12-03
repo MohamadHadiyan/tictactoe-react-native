@@ -4,52 +4,30 @@ import { OPlayer, XPlayer } from "./Players";
 
 const CurrentPlayer = (props) => {
   const current = props.current;
+  const oPlayer = props.players.oPlayer;
+  const xPlayer = props.players.xPlayer;
+
+  const xColor = {
+    color: current === "X" ? "white" : "gray",
+  };
+
+  const oColor = {
+    color: current === "O" ? "white" : "gray",
+  };
 
   return (
     <View style={styles.currentBox}>
-      <Text
-        style={{
-          color: current === "X" ? "white" : "gray",
-          fontSize: current === "X" ? 20 : 16,
-          paddingRight: 10,
-        }}
-      >
-        {props.players.xPlayer.name}
-      </Text>
+      <Text style={[styles.text, xColor]}>{xPlayer.name}</Text>
       <View style={styles.innerCurrent}>
-        <View
-          style={[
-            styles.playerWrapper,
-            styles.x_wrapper,
-            current === "X" && styles.active,
-          ]}
-        >
-          <XPlayer
-            size={30}
-            style={{
-              position: "relative",
-            }}
-          />
+        {props.children}
+        <View style={[styles.playerWrapper, styles.x_wrapper]}>
+          <XPlayer size={30} style={styles.relative} />
         </View>
-        <View
-          style={[
-            styles.playerWrapper,
-            styles.o_wrapper,
-            current === "O" && styles.active,
-          ]}
-        >
-          <OPlayer size={30} style={{ position: "relative" }} />
+        <View style={[styles.playerWrapper, styles.o_wrapper]}>
+          <OPlayer size={30} style={styles.relative} />
         </View>
       </View>
-      <Text
-        style={{
-          color: current === "O" ? "white" : "gray",
-          fontSize: current === "O" ? 20 : 16,
-          paddingLeft: 10,
-        }}
-      >
-        {props.players.oPlayer.name}
-      </Text>
+      <Text style={[styles.text, oColor]}>{oPlayer.name}</Text>
     </View>
   );
 };
@@ -61,7 +39,6 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     flexDirection: "row",
-    // backgroundColor: "#ccc3",
   },
   innerCurrent: {
     flexDirection: "row",
@@ -70,6 +47,7 @@ const styles = StyleSheet.create({
     borderColor: "#357",
     borderRadius: 30,
     width: 120,
+    overflow: "hidden",
   },
   playerWrapper: {
     flex: 1,
@@ -84,8 +62,12 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 30,
     borderBottomRightRadius: 30,
   },
-  active: {
-    backgroundColor: "#1cd",
+  text: {
+    fontSize: 20,
+    paddingLeft: 10,
+  },
+  relative: {
+    position: "relative",
   },
 });
 
