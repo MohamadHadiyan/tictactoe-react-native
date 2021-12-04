@@ -34,14 +34,17 @@ export default function App() {
   const [showSettings, setShowSettings] = useState(false); // Settings Modal
   const [showPickupModal, setshowPickupModal] = useState(false);
 
-  const [current, setCurrent] = useState("X");
-  const [userPick, setUserPick] = useState("X");
+  const [current, setCurrent] = useState("O");
+  const [userPick, setUserPick] = useState("O");
   const [userChose, setUserChose] = useState(false);
 
   const [winLine, setWinLine] = useState(init.initialWinLine);
   const [winLineAnim] = useState(new Animated.Value(0));
   const [timeLineAnim] = useState(new Animated.Value(0));
-  const [highLightAnim, setHighLightAnim] = useState(new Animated.Value(0));
+  const [highLightAnim] = useState(new Animated.Value(0));
+
+  const [botPicks, setBotPicks] = useState([]);
+  const [userPicks, setUserPicks] = useState([]);
 
   const handleTimeLineAnim = (delay) => {
     Animated.timing(timeLineAnim, {
@@ -68,7 +71,7 @@ export default function App() {
   const handleHighLightAnim = (value) => {
     Animated.timing(highLightAnim, {
       toValue: value,
-      duration: 250,
+      duration: 400,
       useNativeDriver: false,
     }).start();
   };
@@ -101,10 +104,11 @@ export default function App() {
 
     const findProps = { newMap, isWon, players, player };
     const { newPlayers, result } = findWinner(findProps);
+
     const current = player === "X" ? "O" : "X";
     setCurrent(current);
 
-    if (player === userPick) handleHighLightAnim(0);
+    if (current === "O") handleHighLightAnim(0);
     else handleHighLightAnim(1);
 
     setRootStore({
@@ -129,7 +133,10 @@ export default function App() {
     if (!started) setStarted(true);
     if (singleMode) setUserChose(true);
 
-    turnHandler(row, cell, gameMap, current);
+    let player = singleMode ? userPick : current;
+
+    setUserPicks([...userPicks, { row, cell }]);
+    turnHandler(row, cell, gameMap, player);
   };
 
   const settingsHandler = () => {
@@ -158,17 +165,22 @@ export default function App() {
         draws: 0,
       };
 
+      setUserPicks([]);
+      setBotPicks([]);
+
       setRootStore({
         ...rootStore,
         gameMap,
         players: newPlayers,
       });
+
       timeLineAnim.setValue(0);
     }, time);
   };
 
   const modeHandler = (mode) => {
     const gameMap = hardlvl ? init.hardMap : init.easyMap;
+    setshowPickupModal(true);
 
     setRootStore({
       ...init.initialRoot,
@@ -188,15 +200,18 @@ export default function App() {
 
   const closePickup = () => {
     setshowPickupModal(!showPickupModal);
+
+    if (current === "O") handleHighLightAnim(0);
+    else handleHighLightAnim(1);
   };
 
-  // useEffect(() => {
-  //   const timer = setTimeout(() => {
-  //     setshowPickupModal(true);
-  //   }, 1000);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setshowPickupModal(true);
+    }, 1000);
 
-  //   return () => clearTimeout(timer);
-  // }, []);
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     const empty = gameMap.some((row) => row.some((cell) => cell === ""));
@@ -204,9 +219,12 @@ export default function App() {
     if (userChose && empty && !completed && !winner) {
       //
       setTimeout(() => {
-        const { row, cell } = botPlayer(gameMap);
-        const player = userPick === "X" ? "O" : "X";
-        turnHandler(row, cell, gameMap, player);
+        const level = rootStore.level;
+        const { row, cell } = botPlayer(gameMap, botPicks, userPick, level);
+        const bot = userPick === "X" ? "O" : "X";
+
+        if (hardlvl) setBotPicks([...botPicks, { row, cell }]);
+        turnHandler(row, cell, gameMap, bot);
       }, 400);
 
       setUserChose(false);
@@ -253,11 +271,26 @@ export default function App() {
 
   const currentHighLight = highLightAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [58, 0],
+    outputRange: [57.5, 0.5],
+  });
+
+  const nextHighLight = highLightAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.5, 57.5],
   });
 
   const translate = {
     transform: [{ translateX: currentHighLight }],
+  };
+
+  const leftRadius = {
+    borderTopLeftRadius: nextHighLight,
+    borderBottomLeftRadius: nextHighLight,
+  };
+
+  const rightRadius = {
+    borderTopRightRadius: currentHighLight,
+    borderBottomRightRadius: currentHighLight,
   };
 
   const { verticalBorder, leftBorder, width_90 } = styles;
@@ -303,15 +336,7 @@ export default function App() {
         </View>
         <CurrentPlayer players={players} current={current}>
           <Animated.View
-            style={[
-              {
-                width: 58,
-                height: 42,
-                backgroundColor: "#1cd",
-                position: "absolute",
-              },
-              translate,
-            ]}
+            style={[styles.highlight, translate, leftRadius, rightRadius]}
           />
         </CurrentPlayer>
         <Footer handleReset={resetHandler} handleSettings={settingsHandler} />

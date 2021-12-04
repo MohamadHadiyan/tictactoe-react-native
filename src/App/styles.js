@@ -76,6 +76,12 @@ const styles = StyleSheet.create({
   width_90: {
     width: 90,
   },
+  highlight: {
+    width: 58,
+    height: 42,
+    backgroundColor: "#1cd",
+    position: "absolute",
+  },
 });
 
 export default styles;

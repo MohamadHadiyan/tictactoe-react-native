@@ -155,13 +155,16 @@ export const getupdatedMap = (mapProps) => {
   );
 };
 
-export const botPlayer = (currentMap) => {
+export const botPlayer = (currentMap, botPicks, userPick, level) => {
+  const botPick = userPick === "O" ? "X" : "O";
+  const empty = "";
+
   /* === On The Easy level === */
 
   // Find Empty cells index
   const e_indexes = currentMap.map((rows) =>
     rows
-      .map((cell, id) => (cell === "" ? id : -1))
+      .map((cell, id) => (cell === empty ? id : -1))
       .filter((index) => index > -1)
   );
 
@@ -175,10 +178,68 @@ export const botPlayer = (currentMap) => {
     .map((row, i) => (row.length ? i : -1))
     .filter((num) => num > -1);
 
-  const row = getRandom(rowIndexs);
-  const cell = getRandom(e_indexes[row]);
+  let row = getRandom(rowIndexs);
+  let cell = getRandom(e_indexes[row]);
+  let botChose = { row, cell };
 
-  /* On The Hard Level */
+  if (level === "EASY") return botChose;
 
-  return { row, cell };
+  /* ============ On The Hard Level =============== */
+  const rand = Math.random().toFixed(2);
+  const randCheck = rand < 0.4;
+
+  if (botPicks.length) {
+    const { row, cell } = botPicks[botPicks.length - 1];
+    const noUser = currentMap[row].every((c) => c !== userPick);
+
+    if (noUser && randCheck) {
+      const nextCell = currentMap[row][cell + 1];
+      const prevCell = currentMap[row][cell - 1];
+
+      if (cell === 0 && nextCell === empty) {
+        botChose = { row: row, cell: cell + 1 };
+      }
+
+      if (cell === 3 && prevCell === empty) {
+        botChose = { row: row, cell: cell - 1 };
+      }
+    }
+  }
+
+  currentMap.forEach((row, rowIndex) => {
+    // If user picks count in this row greater than 2
+
+    const currentRow = currentMap[rowIndex];
+    let userCells = currentRow.filter((c) => c === userPick);
+    let lenCheck = userCells.length > 2;
+
+    let botCell = currentRow.includes(botPick);
+    let emptyIndex = currentRow.indexOf(empty);
+
+    if (lenCheck && !botCell && randCheck) {
+      botChose = { row: rowIndex, cell: emptyIndex };
+    }
+
+    // If user picks count in Columns greater than 2
+    const columns = [];
+    let empty_index = -1;
+    let bot_index = -1;
+
+    row.forEach((cell, cellIndex) => {
+      const currentCell = currentMap[cellIndex][rowIndex];
+      columns.push(currentCell);
+
+      if (currentCell === empty) empty_index = cellIndex;
+      if (currentCell === botPick) bot_index = rowIndex;
+    });
+
+    let user_cells = columns.filter((cell) => cell === userPick);
+    let len_check = user_cells.length > 2;
+
+    if (len_check && bot_index === -1 && randCheck) {
+      botChose = { row: empty_index, cell: rowIndex };
+    }
+  });
+
+  return botChose;
 };
